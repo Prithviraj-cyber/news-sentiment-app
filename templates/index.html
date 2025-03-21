@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Sentiment Analysis</title>
+    <style>
+        /* Basic styling for the page */
+        body { font-family: Arial, sans-serif; margin: 20px; padding: 20px; }
+        input, button { padding: 10px; margin: 5px; }
+        #results { margin-top: 20px; }
+    </style>
+    <script>
+        /* Function to fetch news articles and sentiment analysis from the API */
+        async function fetchNews() {
+            const company = document.getElementById("company").value; // Get user input
+            if (!company) {
+                alert("Please enter a company name!");
+                return;
+            }
+            
+            document.getElementById("results").innerHTML = "<p>Loading...</p>"; // Show loading message
+            console.log("📡 Sending request to API...");
+
+            try {
+                const response = await fetch("/get_news", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ company })
+                });
+
+                const data = await response.json(); // Convert response to JSON
+                console.log("✅ API Response:", data);
+
+                let result = `<h2>News Sentiment Analysis for ${company}</h2>`;
+                
+                // Loop through each news article and display title, summary, sentiment, and link
+                data.articles.forEach(article => {
+                    result += `<div>
+                        <h3>${article.title}</h3>
+                        <p>${article.summary}</p>
+                        <p><b>Sentiment:</b> ${article.sentiment}</p>
+                        <a href='${article.link}' target='_blank'>Read More</a>
+                    </div><hr>`;
+                });
+
+                // Display sentiment analysis summary
+                result += `<h3>Sentiment Summary</h3>`;
+                result += `<pre>${JSON.stringify(data.sentiment_summary, null, 2)}</pre>`;
+                
+                // Display extracted top keywords
+                result += `<h3>Top Keywords</h3>`;
+                result += `<p>${data.top_keywords.join(", ")}</p>`;
+
+                // If an audio file is available, display an audio player with a play/pause button
+                if (data.audio) {
+                    result += `
+                        <h3>🔊 Listen to Summary</h3>
+                        <audio id="audioPlayer" controls>
+                            <source src="${data.audio}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <button onclick="toggleAudio()">Play/Pause</button>
+                    `;
+                }
+                
+                document.getElementById("results").innerHTML = result; // Update the results section
+            } catch (error) {
+                console.error("❌ Fetch error:", error);
+                document.getElementById("results").innerHTML = `<p>Failed to fetch data: ${error.message}</p>`;
+            }
+        }
+
+        /* Function to toggle play/pause functionality for the audio player */
+        function toggleAudio() {
+            const audio = document.getElementById("audioPlayer");
+            if (audio.paused) {
+                audio.play();
+            } else {
+                audio.pause();
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>News Sentiment & Text-to-Speech</h1>
+    
+    <!-- Input field for entering company name -->
+    <input type="text" id="company" placeholder="Enter company name">
+    
+    <!-- Button to fetch and analyze news -->
+    <button onclick="fetchNews()">Analyze</button>
+    
+    <!-- Section to display results -->
+    <div id="results"></div>
+</body>
+</html>
